@@ -1,6 +1,7 @@
 pub mod css;
 pub mod dom;
 pub mod html;
+pub mod style;
 
 use combine::error::ParseError;
 use combine::parser::char::{newline, space};
