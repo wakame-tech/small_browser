@@ -1,16 +1,8 @@
+use crate::blank;
 use crate::dom::{AttrMap, Element, Node, Text};
 use combine::error::{ParseError, StreamError};
-use combine::parser::char::{char, letter, newline, space};
+use combine::parser::char::{char, letter};
 use combine::{attempt, between, choice, many, many1, parser, satisfy, sep_by, Parser, Stream};
-
-fn blank<Input>() -> impl Parser<Input, Output = ()>
-where
-    Input: Stream<Token = char>,
-    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
-{
-    // 空白と改行を読み飛ばす
-    many::<String, _, _>(space().or(newline())).map(|_| ())
-}
 
 /// `attribute` consumes `name="value"`.
 // attribute := attribute_name S* "=" S* attribute_value
