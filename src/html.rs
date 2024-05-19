@@ -1,8 +1,8 @@
 use crate::blank;
-use crate::dom::{AttrMap, Element, Node, Text};
+use crate::dom::{AttrMap, Element, Node, NodeType, Text};
 use combine::error::{ParseError, StreamError};
 use combine::parser::char::{char, letter};
-use combine::{attempt, between, choice, many, many1, parser, satisfy, sep_by, Parser, Stream};
+use combine::{attempt, between, choice, many, many1, parser, satisfy, sep_end_by, Parser, Stream};
 
 /// `attribute` consumes `name="value"`.
 // attribute := attribute_name S* "=" S* attribute_value
@@ -43,8 +43,7 @@ where
     // 空白区切りで `attribute`を使いたい
     // https://docs.rs/combine/latest/combine/fn.sep_by.html
     //          ↓ `F` は変換先の型
-    sep_by::<Vec<_>, _, _, _>(attribute(), char::<Input>(' '))
-        .map(|attrs| AttrMap::from_iter(attrs))
+    sep_end_by::<Vec<_>, _, _, _>(attribute(), blank()).map(|attrs| AttrMap::from_iter(attrs))
 }
 
 /// `open_tag` consumes `<tag_name attr_name="attr_value" ...>`.
@@ -58,7 +57,6 @@ where
         many1::<String, _, _>(letter()),
         blank(),
         attributes(),
-        blank(),
         char('>'),
     )
         .map(|v| (v.1, v.3))
@@ -102,7 +100,7 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    many1(satisfy(|c: char| c != '<')).map(|t| Text::new(t))
+    many1(satisfy(|c: char| c != '<')).map(|t: String| Text::new(t.trim().to_string()))
 }
 
 /// `element` consumes `<tag_name attr_name="attr_value" ...>(children)</tag_name>`.
@@ -111,8 +109,8 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    (open_tag(), nodes(), close_tag()).and_then(
-        |((open_tag_name, attributes), children, close_tag_name)| {
+    (open_tag(), blank(), nodes(), blank(), close_tag()).and_then(
+        |((open_tag_name, attributes), _, children, _, close_tag_name)| {
             if open_tag_name == close_tag_name {
                 Ok(Element::new(open_tag_name, attributes, children))
             } else {
@@ -132,7 +130,13 @@ parser! {
     fn nodes[Input]()(Input) -> Vec<Box<Node>>
     where [Input: Stream<Token = char>]
     {
-        nodes_()
+        nodes_().map(|nodes| nodes
+            // text要素の前後をtrimしたものが空なら無視する
+            .into_iter()
+            .filter(|n| match &n.node_type {
+                NodeType::Text(t) => !t.data.trim().is_empty(),
+                _ => true,
+            }).collect())
     }
 }
 
@@ -202,10 +206,10 @@ mod tests {
             let mut attributes = AttrMap::new();
             attributes.insert("id".to_string(), "test".to_string());
             // TODO:
-            // assert_eq!(
-            //     open_tag().parse("<p id=\"test\" >"),
-            //     Ok((("p".to_string(), attributes), ""))
-            // )
+            assert_eq!(
+                open_tag().parse("<p id=\"test\"  >"),
+                Ok((("p".to_string(), attributes), ""))
+            )
         }
 
         {
@@ -248,7 +252,7 @@ mod tests {
         );
 
         assert_eq!(
-            element().parse("<div><p>hello world</p></div>"),
+            element().parse("<div>  <p>hello world</p>\n </div>"),
             Ok((
                 Element::new(
                     "div".to_string(),
