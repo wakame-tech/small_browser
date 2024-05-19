@@ -92,26 +92,6 @@ fn calc_size(canvas: &CanvasAPI, layout_box: &LayoutBox) -> (f64, f64) {
 /// - 再帰で出来そう?: 先に子の箱の大きさを計算
 /// - 基準座標(pos)を持っておいて各layout_boxの位置(箱の左上の座標, 幅と高さ)を計算する
 pub fn paint<'a>(pos: &Point, canvas: &CanvasAPI, layout_box: &LayoutBox<'a>) {
-    // 大きさを計算
-    let (w, h) = calc_size(canvas, layout_box);
-    log::debug!(
-        "{}, {}x{}\n{}",
-        pos,
-        w.round(),
-        h.round(),
-        layout_box.box_type
-    );
-    if let Some(props) = &layout_box.box_type.get_props() {
-        match props.node_type {
-            NodeType::Text(text) => {
-                canvas.draw_text(&pos, text.data.as_str());
-            }
-            NodeType::Element(_) => {
-                canvas.draw_rect(&pos, w, h);
-            }
-        }
-    }
-
     // 描画する
     let mut child_pos = pos.clone();
     let max_child_h = layout_box
@@ -142,5 +122,26 @@ pub fn paint<'a>(pos: &Point, canvas: &CanvasAPI, layout_box: &LayoutBox<'a>) {
         paint(&child_pos, canvas, child);
 
         child_pos.x += ch_w;
+    }
+
+    // 大きさを計算
+    // TODO: calc_sizeを呼ぶ回数をO(N)に減らせる
+    let (w, h) = calc_size(canvas, layout_box);
+    log::debug!(
+        "{}, {}x{}\n{}",
+        pos,
+        w.round(),
+        h.round(),
+        layout_box.box_type
+    );
+    if let Some(props) = &layout_box.box_type.get_props() {
+        match props.node_type {
+            NodeType::Text(text) => {
+                canvas.draw_text(&pos, text.data.as_str());
+            }
+            NodeType::Element(_) => {
+                canvas.draw_rect(&pos, w, h);
+            }
+        }
     }
 }
