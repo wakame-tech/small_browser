@@ -1,3 +1,5 @@
+use crate::dom::{Node, NodeType};
+use anyhow::Result;
 use combine::{
     choice,
     error::StreamError,
@@ -5,8 +7,6 @@ use combine::{
     parser::char::{self, char, letter, spaces, string},
     sep_by, sep_end_by, ParseError, Parser, Stream,
 };
-
-use crate::dom::{Node, NodeType};
 
 /// `Stylesheet` represents a single stylesheet.
 /// It consists of multiple rules, which are called "rule-list" in the standard (https://www.w3.org/TR/css-syntax-3/).
@@ -130,11 +130,11 @@ pub enum CSSValue {
     Keyword(String),
 }
 
-pub fn parse(raw: &str) -> Stylesheet {
+pub fn parse(raw: &str) -> Result<Stylesheet> {
     rules()
         .parse(raw)
         .map(|(rules, _)| Stylesheet::new(rules))
-        .unwrap()
+        .map_err(|e| e.into())
 }
 
 fn rules<Input>() -> impl Parser<Input, Output = Vec<Rule>>
@@ -142,6 +142,7 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
+    // TODO: 末尾に空白とか改行があるとエラーになる
     (spaces(), sep_by(rule(), spaces()), spaces()).map(|(_, rules, _)| rules)
 }
 
