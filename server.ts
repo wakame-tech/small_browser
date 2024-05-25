@@ -1,12 +1,11 @@
-import { Application, Router, send } from "https://deno.land/x/oak/mod.ts";
+import { Application, Router } from "https://deno.land/x/oak/mod.ts";
 import { oakCors } from "https://deno.land/x/cors/mod.ts";
-
-const bin = await Deno.readFile("sample/sample.html.bin");
-console.log(bin)
 
 const router = new Router();
 router
     .get("/", async (context) => {
+        const bin = await Deno.readFile("sample/sample.html.bin");
+        console.log(`GET / (${bin.length} bytes)`);
         context.response.body = bin;
     })
 

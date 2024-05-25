@@ -18,6 +18,7 @@ fn run(node: Box<Node>, css: &str) -> Result<()> {
     };
     let layout_box = LayoutBox::new(styled_node);
     let canvas = CanvasAPI::new();
+    canvas.clear();
     paint(&Point { x: 0., y: 0. }, &canvas, &layout_box);
     Ok(())
 }

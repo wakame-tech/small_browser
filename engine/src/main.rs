@@ -3,7 +3,7 @@ use binding::create_document_object;
 use dom::{dom::Node, html};
 use renderer::Renderer;
 use renderer_api::RendererAPI;
-use std::{cell::RefCell, rc::Rc, sync::Once};
+use std::{cell::RefCell, fs::File, io::Read, path::PathBuf, rc::Rc, sync::Once, time::Duration};
 
 mod binding;
 mod renderer;
@@ -215,23 +215,14 @@ fn setup_logger() -> Result<(), fern::InitError> {
 
 fn main() -> Result<()> {
     setup_logger()?;
-    let html = r#"<body>
-    <p>hello</p>
-    <p class="inline">world</p>
-    <p class="inline">:)</p>
-    <p>this</p>
-    <p class="inline">is</p>
-    <p class="inline">inline</p>
-    <div class="none"><p>this should not be shown</p></div>
-    <div id="result">
-        <p>hoge</p>
-    </div>
-    <script>
-        document.getElementById("result").innerHTML = `\x3cp\x3eloaded\x3c/p\x3e`
-    </script>
-</body>"#;
+    let mut html_file = File::open("sample/sample.html")?;
+    let mut html = String::new();
+    html_file.read_to_string(&mut html)?;
+    let node = html::parse(&html);
+    node.write_as_bin(&PathBuf::from("sample/sample.html.bin"))?;
 
-    let node = html::parse(html);
+    std::thread::sleep(Duration::from_secs(3));
+
     let mut renderer = Renderer::new(node);
     renderer.execute_inline_scripts();
 

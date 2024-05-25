@@ -32,6 +32,15 @@ impl CanvasAPI {
         Self { canvas, context }
     }
 
+    pub fn clear(&self) {
+        self.context.clear_rect(
+            0.0,
+            0.0,
+            self.canvas.width() as f64,
+            self.canvas.height() as f64,
+        );
+    }
+
     /// 四角形を描画する
     pub fn draw_rect(&self, pos: &Point, w: f64, h: f64) {
         self.context.stroke_rect(pos.x, pos.y, w, h)

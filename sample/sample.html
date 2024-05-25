@@ -8,4 +8,11 @@
     <div class="none">
         <p>this should not be shown</p>
     </div>
+    <p id="result"></p>
+    <script>
+        let count = 0;
+        setInterval(() => {
+            document.getElementById("result").innerText = `${count++}`
+        }, 1000)
+    </script>
 </body>

@@ -26,18 +26,15 @@ fn collect_tag_inners(node: &Box<Node>, tag_name: &str) -> Vec<String> {
 impl Renderer {
     pub fn new(node: Box<Node>) -> Self {
         let document_element = Rc::new(RefCell::new(node));
-        let document_element_ref = document_element.clone();
         Self {
-            document_element,
+            document_element: document_element.clone(),
             js_runtime_instance: JavaScriptRuntime::new(
-                document_element_ref,
-                Rc::new(RendererAPI {}),
+                document_element.clone(),
+                Rc::new(RendererAPI {
+                    document_element: document_element.clone(),
+                }),
             ),
         }
-    }
-
-    pub fn rerender(&self) {
-        log::warn!("どうにかしてwasm側にあるcanvasを更新する")
     }
 
     // Renderer が管理する DOM ツリー（self.document_element）内の JavaScript を実行する関数
