@@ -1,0 +1,12 @@
+[package]
+name = "engine"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+log = "0.4"
+fern = "0.5"
+chrono = "0.4"
+anyhow = "1"
+v8 = "0.92.0"
+dom = { path = "../dom" }
