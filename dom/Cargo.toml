@@ -1,0 +1,21 @@
+[package]
+name = "dom"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+log = "0.4"
+fern = "0.5"
+chrono = "0.4"
+anyhow = "1"
+clap-verbosity-flag = "0.3.1"
+structopt = "0.3.21"
+thiserror = "1.0"
+combine = "4.5.2"
+num-traits = "0.2"
+num-derive = "0.3"
+url = "2.2.1"
+reqwest = { version = "0.11", features = ["blocking"] }
+unicode-width = "0.1.8"
+crossbeam-channel = "0.5.1"
+pretty_assertions = "1.4.0"
