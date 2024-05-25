@@ -1,0 +1,16 @@
+script {
+    display: none;
+}
+
+p,
+div {
+    display: block;
+}
+
+.none {
+    display: none;
+}
+
+.inline {
+    display: inline;
+}

@@ -1,0 +1,7 @@
+[DEBUG] scripts: console.log("hello")
+        // document.getElementById("result").innerHTML = `\x3cp\x3eloaded\x3c/p\x3e`
+[DEBUG] scripts: document.getElementById("result").innerHTML = `\x3cp\x3eloaded\x3c/p\x3e`
+[WARN] renderはtodo
+[DEBUG] scripts: document.getElementById("result").innerHTML = `\x3cp\x3eloaded\x3c/p\x3e`
+[DEBUG] new_html: <p>loaded</p>
+[WARN] renderはtodo

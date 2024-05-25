@@ -1,7 +1,7 @@
-use crate::{
+use crate::util::Point;
+use dom::{
     dom::NodeType,
     layout::{BoxType, LayoutBox},
-    util::Point,
 };
 use std::f64;
 use wasm_bindgen::prelude::*;

@@ -1,9 +1,9 @@
-use std::collections::HashMap;
-
 use crate::html;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 pub type AttrMap = HashMap<String, String>;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Node {
     pub node_type: NodeType,
     pub children: Vec<Box<Node>>,
@@ -50,13 +50,13 @@ impl Node {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum NodeType {
     Element(Element),
     Text(Text),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Element {
     pub tag_name: String,
     pub attributes: AttrMap,
@@ -87,7 +87,7 @@ impl Element {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Text {
     pub data: String,
 }

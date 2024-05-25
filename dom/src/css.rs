@@ -7,6 +7,7 @@ use combine::{
     parser::char::{self, char, letter, spaces, string},
     sep_by, sep_end_by, ParseError, Parser, Stream,
 };
+use serde::{Deserialize, Serialize};
 
 /// `Stylesheet` represents a single stylesheet.
 /// It consists of multiple rules, which are called "rule-list" in the standard (https://www.w3.org/TR/css-syntax-3/).
@@ -125,7 +126,7 @@ pub struct Declaration {
 }
 
 /// `CSSValue` represents some of *component value types* defined at [CSS Values and Units Module Level 3](https://www.w3.org/TR/css-values-3/#component-types).
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub enum CSSValue {
     Keyword(String),
 }

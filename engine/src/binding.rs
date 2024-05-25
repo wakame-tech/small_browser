@@ -91,10 +91,10 @@ fn to_v8_element<'s>(
                 let node = to_linked_rust_node(scope, this);
 
                 // Rust 上の DOM ツリー表現を更新する
-                node.set_inner_html(value.to_rust_string_lossy(scope).as_str());
+                let new_html = value.to_rust_string_lossy(scope);
+                log::debug!("new_html: {}", new_html);
+                node.set_inner_html(new_html.as_str());
 
-                // 画面に描画されている Cursive ビューと、最新の DOM ツリーが乖離しうるので、
-                // 画面に描画されている Cursive ビューの再描画を要求する
                 JavaScriptRuntime::renderer_api(scope).rerender();
             },
         );

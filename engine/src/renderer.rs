@@ -46,6 +46,7 @@ impl Renderer {
             let document_element = self.document_element.borrow();
             collect_tag_inners(&document_element, "script".into()).join("\n")
         };
+        log::debug!("scripts: {}", scripts);
         self.js_runtime_instance
             .execute("(inline)", scripts.as_str())
             .unwrap();

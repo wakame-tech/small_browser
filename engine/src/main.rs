@@ -203,7 +203,18 @@ fn to_pretty_string(mut try_catch: v8::TryCatch<v8::HandleScope>) -> String {
     format!("{}:{}: {}", filename, line_number, exception_string)
 }
 
+fn setup_logger() -> Result<(), fern::InitError> {
+    fern::Dispatch::new()
+        .format(|out, message, record| out.finish(format_args!("[{}] {}", record.level(), message)))
+        .level(log::LevelFilter::Debug)
+        .chain(std::io::stdout())
+        .chain(fern::log_file("output.log")?)
+        .apply()?;
+    Ok(())
+}
+
 fn main() -> Result<()> {
+    setup_logger()?;
     let html = r#"<body>
     <p>hello</p>
     <p class="inline">world</p>
