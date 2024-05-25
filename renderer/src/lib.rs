@@ -44,10 +44,12 @@ fn run(node: Box<Node>, css: &str) -> Result<()> {
 // }
 
 #[wasm_bindgen]
-pub fn render(buf: JsValue) -> Result<(), JsValue> {
+pub fn setup() {
     wasm_logger::init(wasm_logger::Config::default());
+}
 
-    log::debug!("{:?}", buf);
+#[wasm_bindgen]
+pub fn render(buf: JsValue) -> Result<(), JsValue> {
     let array = js_sys::Uint8Array::new(&buf);
     let bin = array.to_vec();
     let node: Node = bincode::deserialize(bin.as_slice()).unwrap();

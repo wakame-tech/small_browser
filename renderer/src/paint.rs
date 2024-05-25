@@ -136,13 +136,13 @@ pub fn paint<'a>(pos: &Point, canvas: &CanvasAPI, layout_box: &LayoutBox<'a>) {
     // 大きさを計算
     // TODO: calc_sizeを呼ぶ回数をO(N)に減らせる
     let (w, h) = calc_size(canvas, layout_box);
-    log::debug!(
-        "{}, {}x{}\n{}",
-        pos,
-        w.round(),
-        h.round(),
-        layout_box.box_type
-    );
+    // log::debug!(
+    //     "{}, {}x{}\n{}",
+    //     pos,
+    //     w.round(),
+    //     h.round(),
+    //     layout_box.box_type
+    // );
     if let Some(props) = &layout_box.box_type.get_props() {
         match props.node_type {
             NodeType::Text(text) => {

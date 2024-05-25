@@ -220,9 +220,7 @@ fn main() -> Result<()> {
     html_file.read_to_string(&mut html)?;
     let node = html::parse(&html);
     node.write_as_bin(&PathBuf::from("sample/sample.html.bin"))?;
-
     std::thread::sleep(Duration::from_secs(3));
-
     let mut renderer = Renderer::new(node);
     renderer.execute_inline_scripts();
 
