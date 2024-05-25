@@ -1,5 +1,8 @@
 # small_browser
 
 ```
-trunk serve
+cd renderer
+./build.sh
+cd ../web
+npm run dev
 ```
