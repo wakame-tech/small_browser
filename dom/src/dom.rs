@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+
+use crate::html;
 pub type AttrMap = HashMap<String, String>;
 
 #[derive(Debug, PartialEq)]
@@ -19,6 +21,32 @@ impl Node {
             })
             .collect::<Vec<_>>()
             .join("")
+    }
+
+    pub fn inner_html(&self) -> String {
+        self.children
+            .iter()
+            .map(|node| format!("{:?}", node))
+            .collect::<Vec<_>>()
+            .join("")
+    }
+
+    pub fn set_inner_html(&mut self, html: &str) {
+        self.children = html::parse_raw(html.into());
+    }
+
+    pub fn get_element_by_id<'a>(self: &'a mut Box<Self>, id: &str) -> Option<&'a mut Box<Self>> {
+        match self.node_type {
+            NodeType::Element(ref e) => {
+                if e.id().map(|eid| eid.to_string() == id).unwrap_or(false) {
+                    return Some(self);
+                }
+            }
+            _ => (),
+        };
+        self.children
+            .iter_mut()
+            .find_map(|child| child.get_element_by_id(id))
     }
 }
 
@@ -43,6 +71,19 @@ impl Element {
             }),
             children,
         })
+    }
+
+    pub fn id(&self) -> Option<&String> {
+        self.attributes.get("id")
+    }
+
+    pub fn attributes(&self) -> Vec<(String, String)> {
+        self.attributes
+            .iter()
+            .clone()
+            .into_iter()
+            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .collect()
     }
 }
 

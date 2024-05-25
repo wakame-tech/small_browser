@@ -1,15 +1,19 @@
 use anyhow::Result;
-use dom::{css, dom::Node, html};
-use render_api::RenderAPI;
+use binding::create_document_object;
+use dom::{dom::Node, html};
 use renderer::Renderer;
+use renderer_api::RendererAPI;
 use std::{cell::RefCell, rc::Rc, sync::Once};
 
-mod render_api;
+mod binding;
 mod renderer;
+mod renderer_api;
 
 /// `JavaScriptRuntimeState` defines a state of JS runtime that will be stored per v8 isolate.
 pub struct JavaScriptRuntimeState {
     pub context: v8::Global<v8::Context>,
+    pub renderer_api: Rc<RendererAPI>,
+    pub document_element: Rc<RefCell<Box<Node>>>,
 }
 
 /// `JavaScriptRuntime` defines a JS runtime with v8.
@@ -21,7 +25,7 @@ pub struct JavaScriptRuntime {
 }
 
 impl JavaScriptRuntime {
-    pub fn new(document_element: Rc<RefCell<Box<Node>>>) -> Self {
+    pub fn new(document_element: Rc<RefCell<Box<Node>>>, renderer_api: Rc<RendererAPI>) -> Self {
         // init v8 platform just once
         static PUPPY_INIT: Once = Once::new();
         PUPPY_INIT.call_once(move || {
@@ -36,12 +40,24 @@ impl JavaScriptRuntime {
             let isolate_scope = &mut v8::HandleScope::new(&mut isolate);
             let handle_scope = &mut v8::EscapableHandleScope::new(isolate_scope);
             let context = v8::Context::new(handle_scope);
+            let global = context.global(handle_scope);
+            {
+                // `create_document_object()` の返り値をグローバル変数 `document` に格納する
+                let scope = &mut v8::ContextScope::new(handle_scope, context);
+                let key = v8::String::new(scope, "document").unwrap();
+                let document = create_document_object(scope);
+                global.set(scope, key.into(), document.into());
+            }
             let context_scope = handle_scope.escape(context);
             v8::Global::new(handle_scope, context_scope)
         };
 
         // store state inside v8 isolate
-        isolate.set_slot(Rc::new(RefCell::new(JavaScriptRuntimeState { context })));
+        isolate.set_slot(Rc::new(RefCell::new(JavaScriptRuntimeState {
+            context,
+            renderer_api,
+            document_element: document_element.clone(),
+        })));
 
         JavaScriptRuntime {
             v8_isolate: isolate,
@@ -89,6 +105,44 @@ impl JavaScriptRuntime {
                 Err(to_pretty_string(tc_scope))
             }
         }
+    }
+}
+
+impl JavaScriptRuntime {
+    /// `renderer_api` returns the `BrowserAPI` object in the Rust world linked to the given isolate.
+    pub fn renderer_api(isolate: &v8::Isolate) -> Rc<RendererAPI> {
+        let state = Self::state(isolate);
+        let state = state.borrow();
+        state.renderer_api.clone()
+    }
+
+    /// `get_renderer_api` returns the `BrowserAPI` object in the Rust world linked to the runtime.
+    pub fn get_renderer_api(&mut self) -> Rc<RendererAPI> {
+        Self::renderer_api(&self.v8_isolate)
+    }
+
+    /// `set_renderer_api` links the given `PageViewAPIHandler` object to the runtime.
+    pub fn set_renderer_api(&mut self, renderer_api: Rc<RendererAPI>) {
+        self.get_state().borrow_mut().renderer_api = renderer_api;
+    }
+}
+
+impl JavaScriptRuntime {
+    /// `document_element` returns the `Node` object in the Rust world linked to the given isolate.
+    pub fn document_element(isolate: &v8::Isolate) -> Rc<RefCell<Box<Node>>> {
+        let state = Self::state(isolate);
+        let state = state.borrow();
+        state.document_element.clone()
+    }
+
+    /// `get_document_element` returns the `Document` object in the Rust world linked to the runtime.
+    pub fn get_document_element(&mut self) -> Rc<RefCell<Box<Node>>> {
+        Self::document_element(&self.v8_isolate)
+    }
+
+    /// `set_document` links the given `Document` object to the runtime.
+    pub fn set_document_element(&mut self, document_element: Rc<RefCell<Box<Node>>>) {
+        self.get_state().borrow_mut().document_element = document_element;
     }
 }
 
@@ -158,6 +212,12 @@ fn main() -> Result<()> {
     <p class="inline">is</p>
     <p class="inline">inline</p>
     <div class="none"><p>this should not be shown</p></div>
+    <div id="result">
+        <p>hoge</p>
+    </div>
+    <script>
+        document.getElementById("result").innerHTML = `\x3cp\x3eloaded\x3c/p\x3e`
+    </script>
 </body>"#;
 
     let node = html::parse(html);

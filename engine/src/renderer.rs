@@ -1,4 +1,4 @@
-use crate::JavaScriptRuntime;
+use crate::{renderer_api::RendererAPI, JavaScriptRuntime};
 use dom::dom::{Node, NodeType};
 use std::{cell::RefCell, rc::Rc};
 
@@ -29,7 +29,10 @@ impl Renderer {
         let document_element_ref = document_element.clone();
         Self {
             document_element,
-            js_runtime_instance: JavaScriptRuntime::new(document_element_ref),
+            js_runtime_instance: JavaScriptRuntime::new(
+                document_element_ref,
+                Rc::new(RendererAPI {}),
+            ),
         }
     }
 
