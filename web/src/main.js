@@ -1,9 +1,7 @@
-import init, { setup, render } from "./wasm";
+import init, { setup, render, exec_js } from "./wasm";
 
 init().then(() => {
     setup();
-    setInterval(async () => {
-        const buf = await fetch('http://localhost:8000').then(res => res.arrayBuffer());
-        render(buf)
-    }, 1000)
+    render();
+    exec_js();
 });

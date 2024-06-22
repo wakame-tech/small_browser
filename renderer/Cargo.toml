@@ -24,8 +24,11 @@ wasm-bindgen = "0.2.92"
 wasm-logger = "0.2.0"
 wasm-bindgen-futures = "0.4.42"
 serde = { version = "1.0.202", features = ["derive"] }
-bincode = "1.3.3"
+once_cell = "1.19.0"
 dom = { path = "../dom" }
+engine = { path = "../engine" }
+# https://github.com/rust-random/getrandom/issues/208#issuecomment-1468480025
+getrandom = { version = "0.2", features = ["js"] }
 
 [lib]
 crate-type = ["cdylib"]

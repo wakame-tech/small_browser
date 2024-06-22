@@ -1,59 +1,32 @@
 use crate::paint::paint;
 use anyhow::Result;
-use dom::{css, dom::Node, layout::LayoutBox, style::to_styled_node};
+use dom::{css, html, layout::LayoutBox, style::to_styled_node};
+use engine::{runtime::Runtime, DOM};
 use js_sys::wasm_bindgen;
 use paint::CanvasAPI;
 use util::Point;
 use wasm_bindgen::{prelude::*, JsValue};
-// use wasm_bindgen_futures::JsFuture;
-// use web_sys::{Request, RequestInit, Response};
 
 mod paint;
 mod util;
 
-fn run(node: Box<Node>, css: &str) -> Result<()> {
-    let style = css::parse(css)?;
-    let Some(styled_node) = to_styled_node(&node, &style) else {
-        return Err(anyhow::anyhow!("Failed to style node"));
-    };
-    let layout_box = LayoutBox::new(styled_node);
-    let canvas = CanvasAPI::new();
-    canvas.clear();
-    paint(&Point { x: 0., y: 0. }, &canvas, &layout_box);
-    Ok(())
-}
-
-// async fn fetch_dom() -> Result<Node, JsValue> {
-//     let opts = RequestInit::new();
-//     let url = format!("http://127.0.0.1:8000");
-//     let request = Request::new_with_str_and_init(&url, &opts)?;
-//     let window = web_sys::window().unwrap();
-//     let resp_value = JsFuture::from(window.fetch_with_request(&request)).await?;
-
-//     // `resp_value` is a `Response` object.
-//     assert!(resp_value.is_instance_of::<Response>());
-//     let resp: Response = resp_value.dyn_into().unwrap();
-
-//     // Convert this other `Promise` into a rust `Future`.
-//     let buf = JsFuture::from(resp.array_buffer()?).await?;
-//     let array = js_sys::Uint8Array::new(&buf);
-//     let bytes = array.to_vec();
-//     let node: Node = bincode::deserialize(bytes.as_slice())
-//         .map_err(|_| JsValue::from("Failed to deserialize"))?;
-//     Ok(node)
-// }
-
-#[wasm_bindgen]
-pub fn setup() {
-    wasm_logger::init(wasm_logger::Config::default());
-}
-
-#[wasm_bindgen]
-pub fn render(buf: JsValue) -> Result<(), JsValue> {
-    let array = js_sys::Uint8Array::new(&buf);
-    let bin = array.to_vec();
-    let node: Node = bincode::deserialize(bin.as_slice()).unwrap();
-    let node = Box::new(node);
+fn run() -> Result<()> {
+    let html = r#"    
+<body>
+    <p>hello</p>
+    <p class="inline">world</p>
+    <p class="inline">:)</p>
+    <p>this</p>
+    <p class="inline">is</p>
+    <p class="inline">inline</p>
+    <div class="none">
+        <p>this should not be shown</p>
+    </div>
+    <span id="result">hoge</span>
+</body>
+    "#;
+    let mut dom = DOM.try_lock().unwrap();
+    *dom = html::parse(&html);
     let css = r#"
 script {
     display: none;
@@ -67,12 +40,65 @@ p, div {
         .inline {
             display: inline;
         }"#;
-    // let css = r#"* {
-    //     display: inline;
-    // }"#;
-    match run(node, css) {
+
+    let style = css::parse(css)?;
+
+    let Some(styled_node) = to_styled_node(&dom, &style) else {
+        return Err(anyhow::anyhow!("Failed to style node"));
+    };
+    let layout_box = LayoutBox::new(styled_node);
+    let canvas = CanvasAPI::new();
+    canvas.clear();
+    paint(&Point { x: 0., y: 0. }, &canvas, &layout_box);
+    Ok(())
+}
+
+#[wasm_bindgen]
+pub fn setup() {
+    wasm_logger::init(wasm_logger::Config::default());
+}
+
+#[wasm_bindgen]
+pub fn render() -> Result<(), JsValue> {
+    match run() {
         Ok(_) => log::info!("Success"),
         Err(e) => log::error!("{}", e),
     };
     Ok(())
 }
+
+#[wasm_bindgen]
+pub fn exec_js() -> Result<(), JsValue> {
+    let source = r#"
+    document.getElementById("result").innerText = "fuga";
+    document.getElementById("result").innerText;
+    "#;
+    let mut runtime = Runtime::new();
+    let r = runtime.execute("", source);
+    log::debug!("r: {:?}", r);
+    Ok(())
+}
+
+// fn main() -> Result<()> {
+//     setup_logger()?;
+//     {
+//         let mut html_file = File::open("../sample/sample.html")?;
+//         let mut html = String::new();
+//         html_file.read_to_string(&mut html)?;
+//         let mut dom = DOM.try_lock().unwrap();
+//         *dom = html::parse(&html);
+//     }
+
+//     // let mut renderer = Renderer::new(node);
+//     // renderer.execute_inline_scripts();
+
+//     let source = r#"
+//     document.getElementById("result").innerText = "fuga";
+//     document.getElementById("result").innerText;
+//     "#;
+//     let mut runtime = Runtime::new();
+//     let r = runtime.execute("", source);
+//     log::debug!("r: {:?}", r);
+
+//     Ok(())
+// }

@@ -1,6 +1,7 @@
 use crate::html;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fs::OpenOptions, io::Write, path::PathBuf};
+use std::collections::HashMap;
+
 pub type AttrMap = HashMap<String, String>;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -56,19 +57,6 @@ impl Node {
         self.children
             .iter_mut()
             .find_map(|child| child.get_element_by_id(id))
-    }
-}
-
-use anyhow::Result;
-
-impl Node {
-    pub fn write_as_bin(&self, path: &PathBuf) -> Result<()> {
-        // domのバイナリを作る
-        let mut bin_file = OpenOptions::new().write(true).create(true).open(path)?;
-        let bin = bincode::serialize(&self)?;
-        log::debug!("bin: {:?} bytes", bin.len());
-        bin_file.write_all(&bin)?;
-        Ok(())
     }
 }
 
