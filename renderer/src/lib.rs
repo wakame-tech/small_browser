@@ -1,6 +1,12 @@
 use crate::paint::paint;
 use anyhow::Result;
-use dom::{css, html, layout::LayoutBox, style::to_styled_node};
+use dom::{
+    css,
+    dom::{Node, NodeType},
+    html,
+    layout::LayoutBox,
+    style::to_styled_node,
+};
 use engine::{runtime::Runtime, DOM};
 use js_sys::wasm_bindgen;
 use paint::CanvasAPI;
@@ -10,39 +16,43 @@ use wasm_bindgen::{prelude::*, JsValue};
 mod paint;
 mod util;
 
-fn run() -> Result<()> {
-    let html = r#"    
-<body>
-    <p>hello</p>
-    <p class="inline">world</p>
-    <p class="inline">:)</p>
-    <p>this</p>
-    <p class="inline">is</p>
-    <p class="inline">inline</p>
-    <div class="none">
-        <p>this should not be shown</p>
-    </div>
-    <span id="result">hoge</span>
-</body>
-    "#;
-    let mut dom = DOM.try_lock().unwrap();
-    *dom = html::parse(&html);
-    let css = r#"
-script {
-    display: none;
-}
-p, div {
-    display: block;
-}
-    .none {
-            display: none;
+fn collect_tag_inners(node: &Box<Node>, tag_name: &str) -> Vec<String> {
+    if let NodeType::Element(ref element) = node.node_type {
+        if element.tag_name.as_str() == tag_name {
+            return vec![node.inner_text()];
         }
-        .inline {
-            display: inline;
-        }"#;
+    }
+
+    node.children
+        .iter()
+        .map(|child| collect_tag_inners(child, tag_name))
+        .collect::<Vec<Vec<String>>>()
+        .into_iter()
+        .flatten()
+        .collect()
+}
+
+fn execute_inline_scripts(runtime: &mut Runtime) -> Result<String, String> {
+    let scripts = {
+        let document_element = DOM.try_lock().unwrap();
+        collect_tag_inners(&document_element, "script".into()).join("\n")
+    };
+    runtime.execute("(inline)", scripts.as_str())
+}
+
+fn run(html: &str, css: &str) -> Result<()> {
+    {
+        let mut dom = DOM.try_lock().unwrap();
+        *dom = html::parse(&html);
+    }
+
+    let mut runtime = Runtime::new();
+    let result = execute_inline_scripts(&mut runtime).map_err(|e| anyhow::anyhow!(e))?;
+    log::info!("Result: {}", result);
 
     let style = css::parse(css)?;
 
+    let dom = DOM.try_lock().unwrap();
     let Some(styled_node) = to_styled_node(&dom, &style) else {
         return Err(anyhow::anyhow!("Failed to style node"));
     };
@@ -50,6 +60,7 @@ p, div {
     let canvas = CanvasAPI::new();
     canvas.clear();
     paint(&Point { x: 0., y: 0. }, &canvas, &layout_box);
+
     Ok(())
 }
 
@@ -59,46 +70,10 @@ pub fn setup() {
 }
 
 #[wasm_bindgen]
-pub fn render() -> Result<(), JsValue> {
-    match run() {
+pub fn render(html: &str, css: &str) -> Result<(), JsValue> {
+    match run(html, css) {
         Ok(_) => log::info!("Success"),
         Err(e) => log::error!("{}", e),
     };
     Ok(())
 }
-
-#[wasm_bindgen]
-pub fn exec_js() -> Result<(), JsValue> {
-    let source = r#"
-    document.getElementById("result").innerText = "fuga";
-    document.getElementById("result").innerText;
-    "#;
-    let mut runtime = Runtime::new();
-    let r = runtime.execute("", source);
-    log::debug!("r: {:?}", r);
-    Ok(())
-}
-
-// fn main() -> Result<()> {
-//     setup_logger()?;
-//     {
-//         let mut html_file = File::open("../sample/sample.html")?;
-//         let mut html = String::new();
-//         html_file.read_to_string(&mut html)?;
-//         let mut dom = DOM.try_lock().unwrap();
-//         *dom = html::parse(&html);
-//     }
-
-//     // let mut renderer = Renderer::new(node);
-//     // renderer.execute_inline_scripts();
-
-//     let source = r#"
-//     document.getElementById("result").innerText = "fuga";
-//     document.getElementById("result").innerText;
-//     "#;
-//     let mut runtime = Runtime::new();
-//     let r = runtime.execute("", source);
-//     log::debug!("r: {:?}", r);
-
-//     Ok(())
-// }

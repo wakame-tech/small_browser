@@ -4,7 +4,6 @@ use std::sync::Mutex;
 
 mod document;
 mod element;
-mod renderer;
 pub mod runtime;
 
 pub static DOM: Lazy<Mutex<Box<Node>>> = Lazy::new(|| {

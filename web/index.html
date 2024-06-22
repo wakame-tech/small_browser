@@ -1,15 +1,20 @@
 <!doctype html>
-<html lang="en">
+<html lang="ja">
 
 <head>
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/vite.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vite App</title>
+  <title>Small Browser</title>
 </head>
 
 <body>
-  <canvas id="canvas" width="800" height="600"></canvas>
+  <p>renderer</p>
+  <canvas id="canvas" width="600" height="400" style="border: solid 1px; padding: 1rem"></canvas>
+  <p>html</p>
+  <textarea id="html" rows="10" cols="80"></textarea>
+  <p>css</p>
+  <textarea id="css" rows="10" cols="80"></textarea>
   <script type="module" src="./src/main.js"></script>
 </body>
 
