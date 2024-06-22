@@ -1,6 +1,7 @@
 use dom::dom::Node;
 use std::{cell::RefCell, path::PathBuf, rc::Rc};
 
+#[derive(Debug)]
 pub struct RendererAPI {
     pub document_element: Rc<RefCell<Box<Node>>>,
 }
