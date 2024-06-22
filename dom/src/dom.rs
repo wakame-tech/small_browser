@@ -23,6 +23,15 @@ impl Node {
             .join("")
     }
 
+    pub fn set_inner_text(&mut self, text: &str) {
+        self.children = vec![Box::new(Node {
+            node_type: NodeType::Text(Text {
+                data: text.to_string(),
+            }),
+            children: vec![],
+        })];
+    }
+
     pub fn inner_html(&self) -> String {
         self.children
             .iter()

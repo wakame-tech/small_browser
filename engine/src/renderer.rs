@@ -1,10 +1,8 @@
-use crate::{renderer_api::RendererAPI, JavaScriptRuntime};
+use crate::{runtime::Runtime, DOM};
 use dom::dom::{Node, NodeType};
-use std::{cell::RefCell, rc::Rc};
 
 pub struct Renderer {
-    document_element: Rc<RefCell<Box<Node>>>,
-    js_runtime_instance: JavaScriptRuntime,
+    runtime: Runtime,
 }
 
 fn collect_tag_inners(node: &Box<Node>, tag_name: &str) -> Vec<String> {
@@ -24,28 +22,19 @@ fn collect_tag_inners(node: &Box<Node>, tag_name: &str) -> Vec<String> {
 }
 
 impl Renderer {
-    pub fn new(node: Box<Node>) -> Self {
-        let document_element = Rc::new(RefCell::new(node));
+    pub fn new() -> Self {
         Self {
-            document_element: document_element.clone(),
-            js_runtime_instance: JavaScriptRuntime::new(
-                document_element.clone(),
-                Rc::new(RendererAPI {
-                    document_element: document_element.clone(),
-                }),
-            ),
+            runtime: Runtime::new(),
         }
     }
 
     // Renderer が管理する DOM ツリー（self.document_element）内の JavaScript を実行する関数
     pub fn execute_inline_scripts(&mut self) {
         let scripts = {
-            let document_element = self.document_element.borrow();
+            let document_element = DOM.lock().unwrap();
             collect_tag_inners(&document_element, "script".into()).join("\n")
         };
         log::debug!("scripts: {}", scripts);
-        self.js_runtime_instance
-            .execute("(inline)", scripts.as_str())
-            .unwrap();
+        self.runtime.execute("(inline)", scripts.as_str()).unwrap();
     }
 }

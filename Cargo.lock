@@ -467,6 +467,7 @@ dependencies = [
  "dom",
  "fern",
  "log",
+ "once_cell",
  "serde",
 ]
 

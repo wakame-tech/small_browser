@@ -13,3 +13,4 @@ dom = { path = "../dom" }
 serde = { version = "1.0.202", features = ["derive"] }
 bincode = "1.3.3"
 boa_gc = "0.18.0"
+once_cell = "1.19.0"
