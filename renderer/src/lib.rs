@@ -1,47 +1,68 @@
 use crate::paint::paint;
 use anyhow::Result;
-use dom::{css, dom::Node, layout::LayoutBox, style::to_styled_node};
+use dom::{
+    css,
+    dom::{Node, NodeType},
+    html,
+    layout::LayoutBox,
+    style::to_styled_node,
+};
+use engine::{runtime::Runtime, DOM};
 use js_sys::wasm_bindgen;
 use paint::CanvasAPI;
 use util::Point;
 use wasm_bindgen::{prelude::*, JsValue};
-// use wasm_bindgen_futures::JsFuture;
-// use web_sys::{Request, RequestInit, Response};
 
 mod paint;
 mod util;
 
-fn run(node: Box<Node>, css: &str) -> Result<()> {
+fn collect_tag_inners(node: &Box<Node>, tag_name: &str) -> Vec<String> {
+    if let NodeType::Element(ref element) = node.node_type {
+        if element.tag_name.as_str() == tag_name {
+            return vec![node.inner_text()];
+        }
+    }
+
+    node.children
+        .iter()
+        .map(|child| collect_tag_inners(child, tag_name))
+        .collect::<Vec<Vec<String>>>()
+        .into_iter()
+        .flatten()
+        .collect()
+}
+
+fn execute_inline_scripts(runtime: &mut Runtime) -> Result<String, String> {
+    let scripts = {
+        let document_element = DOM.try_lock().unwrap();
+        collect_tag_inners(&document_element, "script".into()).join("\n")
+    };
+    runtime.execute("(inline)", scripts.as_str())
+}
+
+fn run(html: &str, css: &str) -> Result<()> {
+    {
+        let mut dom = DOM.try_lock().unwrap();
+        *dom = html::parse(&html);
+    }
+
+    let mut runtime = Runtime::new();
+    let result = execute_inline_scripts(&mut runtime).map_err(|e| anyhow::anyhow!(e))?;
+    log::info!("Result: {}", result);
+
     let style = css::parse(css)?;
-    let Some(styled_node) = to_styled_node(&node, &style) else {
+
+    let dom = DOM.try_lock().unwrap();
+    let Some(styled_node) = to_styled_node(&dom, &style) else {
         return Err(anyhow::anyhow!("Failed to style node"));
     };
     let layout_box = LayoutBox::new(styled_node);
     let canvas = CanvasAPI::new();
     canvas.clear();
     paint(&Point { x: 0., y: 0. }, &canvas, &layout_box);
+
     Ok(())
 }
-
-// async fn fetch_dom() -> Result<Node, JsValue> {
-//     let opts = RequestInit::new();
-//     let url = format!("http://127.0.0.1:8000");
-//     let request = Request::new_with_str_and_init(&url, &opts)?;
-//     let window = web_sys::window().unwrap();
-//     let resp_value = JsFuture::from(window.fetch_with_request(&request)).await?;
-
-//     // `resp_value` is a `Response` object.
-//     assert!(resp_value.is_instance_of::<Response>());
-//     let resp: Response = resp_value.dyn_into().unwrap();
-
-//     // Convert this other `Promise` into a rust `Future`.
-//     let buf = JsFuture::from(resp.array_buffer()?).await?;
-//     let array = js_sys::Uint8Array::new(&buf);
-//     let bytes = array.to_vec();
-//     let node: Node = bincode::deserialize(bytes.as_slice())
-//         .map_err(|_| JsValue::from("Failed to deserialize"))?;
-//     Ok(node)
-// }
 
 #[wasm_bindgen]
 pub fn setup() {
@@ -49,28 +70,8 @@ pub fn setup() {
 }
 
 #[wasm_bindgen]
-pub fn render(buf: JsValue) -> Result<(), JsValue> {
-    let array = js_sys::Uint8Array::new(&buf);
-    let bin = array.to_vec();
-    let node: Node = bincode::deserialize(bin.as_slice()).unwrap();
-    let node = Box::new(node);
-    let css = r#"
-script {
-    display: none;
-}
-p, div {
-    display: block;
-}
-    .none {
-            display: none;
-        }
-        .inline {
-            display: inline;
-        }"#;
-    // let css = r#"* {
-    //     display: inline;
-    // }"#;
-    match run(node, css) {
+pub fn render(html: &str, css: &str) -> Result<(), JsValue> {
+    match run(html, css) {
         Ok(_) => log::info!("Success"),
         Err(e) => log::error!("{}", e),
     };
