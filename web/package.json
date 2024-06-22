@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "cd ../renderer && ./build_release.sh && cd - && vite build",
+    "build": "vite build",
     "preview": "vite preview"
   },
   "devDependencies": {
