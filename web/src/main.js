@@ -48,4 +48,7 @@ init().then(() => {
     html.addEventListener("input", () => {
         rerender();
     })
+    css.addEventListener("input", () => {
+        rerender();
+    })
 });
